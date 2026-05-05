@@ -1,23 +1,24 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { authStorage } from "@/lib/auth-storage";
 
 const AuthContext = createContext(null);
 
+const getInitialStatus = () => {
+  const token = authStorage.getToken();
+  const storedUser = authStorage.getUser();
+  if (!token) {
+    return "unauthenticated";
+  }
+
+  return storedUser ? "authenticated" : "loading";
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authStorage.getUser());
-  const [status, setStatus] = useState(() =>
-    authStorage.getToken() ? "loading" : "unauthenticated",
-  );
+  const [status, setStatus] = useState(getInitialStatus);
 
   const refresh = useCallback(async () => {
     const token = authStorage.getToken();
@@ -41,12 +42,6 @@ export const AuthProvider = ({ children }) => {
       throw error;
     }
   }, []);
-
-  useEffect(() => {
-    if (authStorage.getToken()) {
-      refresh().catch(() => {});
-    }
-  }, [refresh]);
 
   const login = useCallback(async (credentials) => {
     setStatus("loading");
